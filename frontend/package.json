@@ -1,0 +1,7 @@
+{
+  "name": "producto-graphql-web",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test tests/*.test.js", "check": "node --check dist/js/app.js && node --check dist/js/graphql-client.js && node --check dist/js/products-api.js && node --check dist/js/validation.js"},
+  "engines": {"node": ">=22"}
+}

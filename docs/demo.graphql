@@ -1,0 +1,29 @@
+# Ejecutar cada operación por separado en GraphiQL.
+# Los IDs y versiones son ejemplos: usar los devueltos en el entorno real.
+
+query ListarProductos {
+  productos(limite: 20, offset: 0) {
+    items { id nombre descripcion precio version }
+    total
+  }
+}
+
+query ObtenerProducto {
+  producto(id: 1) { id nombre precio version }
+}
+
+mutation CrearProducto {
+  crearProducto(datos: {nombre: "Monitor", precio: "850000.00", descripcion: "IPS"}) {
+    id nombre precio version
+  }
+}
+
+mutation ActualizarProducto {
+  actualizarProducto(id: 1, version: 1, datos: {nombre: "Monitor 27", precio: "900000.00"}) {
+    id nombre precio version
+  }
+}
+
+mutation EliminarProducto {
+  eliminarProducto(id: 1, version: 2) { id eliminado }
+}

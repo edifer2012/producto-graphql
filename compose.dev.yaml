@@ -1,0 +1,18 @@
+# Se combina con compose.yaml. No utilizar para publicación pública.
+services:
+  api:
+    build:
+      target: development
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/tests:/app/tests:ro
+      - ./backend/alembic:/app/alembic:ro
+    command: [uvicorn, app.main:app, --host, 0.0.0.0, --port, '8000', --reload]
+    environment:
+      GRAPHQL_IDE: 'true'
+      RUFF_CACHE_DIR: /tmp/ruff
+    ports:
+      - "127.0.0.1:8000:8000"
+  web:
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro

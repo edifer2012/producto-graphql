@@ -1,0 +1,75 @@
+name: producto-graphql
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-productos}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Configura POSTGRES_ADMIN_PASSWORD en .env}
+      APP_DB_USER: ${POSTGRES_USER:-productos_app}
+      APP_DB_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/01-app-user.sh:/docker-entrypoint-initdb.d/01-app-user.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+    networks: [data]
+
+  api:
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-productos}
+      POSTGRES_USER: ${POSTGRES_USER:-productos_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
+      GRAPHQL_IDE: ${GRAPHQL_IDE:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+    networks: [edge, data]
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [edge]
+
+volumes:
+  postgres_data:
+
+networks:
+  edge:
+  data:
+    internal: true
